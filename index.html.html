@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Creator Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#111319;
+    --panel:#1b1e26;
+    --panel2:#20242e;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.16);
+    --text:#EDEBE6;
+    --muted:#8B8F98;
+    --muted2:#5f636d;
+    --amber:#F2A93B;
+    --sky:#4FA3D1;
+    --violet:#9B7EDE;
+    --tally:#E5533D;
+    --teal:#2DD4BF;
+    --client:#E88FD0;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  body{padding:28px 24px 60px;min-height:100vh;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Bebas Neue',sans-serif; letter-spacing:0.5px;}
+
+  /* ---------- top bar ---------- */
+  .topbar{
+    display:flex; justify-content:space-between; align-items:flex-end; gap:24px;
+    flex-wrap:wrap; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border);
+  }
+  .brand-eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--tally);
+    text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:8px;
+  }
+  .brand-eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--tally);box-shadow:0 0 8px var(--tally); animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  h1.display{font-size:44px; margin:0; line-height:0.95; color:var(--text);}
+  .subtitle{color:var(--muted); font-size:14px; margin-top:6px;}
+
+  .stat-cluster{display:flex; gap:14px; align-items:stretch; flex-wrap:wrap;}
+  .stat-card{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    padding:12px 18px; min-width:132px; display:flex; flex-direction:column; justify-content:center; gap:2px;
+    position:relative; overflow:hidden;
+  }
+  .stat-card .num{font-family:'Bebas Neue',sans-serif; font-size:30px; line-height:1;}
+  .stat-card .lbl{font-size:10px; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-top:2px;}
+  #streakCard .num{color:var(--tally);}
+  #levelCard .num{color:var(--violet);}
+  #weekCard .num{color:var(--teal);}
+  .flame{font-size:16px; margin-right:4px;}
+
+  /* ---------- week bar chart ---------- */
+  .weekchart{
+    display:flex; gap:8px; align-items:flex-end; height:70px; margin:0 0 26px; padding:14px 16px 8px;
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  }
+  .wc-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; gap:4px;}
+  .wc-track{width:100%; max-width:26px; height:100%; background:var(--panel2); border-radius:6px; display:flex; align-items:flex-end; overflow:hidden; position:relative;}
+  .wc-fill{width:100%; border-radius:6px; transition:height .5s cubic-bezier(.4,0,.2,1); min-height:2px;}
+  .wc-label{font-size:9px; letter-spacing:1px; color:var(--muted2); text-transform:uppercase; margin-top:2px;}
+  .wc-pct{font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--muted);}
+
+  /* ---------- day grid ---------- */
+  .grid{display:grid; grid-template-columns:repeat(7,minmax(200px,1fr)); gap:14px; overflow-x:auto; padding-bottom:8px;}
+  @media (max-width:1100px){.grid{grid-template-columns:repeat(7,240px);}}
+
+  .slate{
+    background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+    display:flex; flex-direction:column; overflow:hidden; min-height:340px;
+    transition:border-color .25s, transform .25s;
+  }
+  .slate.today{border-color:var(--border-strong); box-shadow:0 0 0 1px var(--border-strong), 0 8px 24px -8px rgba(0,0,0,.5);}
+  .slate-head{padding:14px 14px 10px; position:relative;}
+  .slate-tab{
+    position:absolute; top:0; right:0; left:0; height:5px;
+    background:repeating-linear-gradient(45deg, var(--accent) 0 8px, transparent 8px 16px);
+    opacity:.9;
+  }
+  .day-name{font-family:'Bebas Neue',sans-serif; font-size:26px; line-height:1; margin-top:8px;}
+  .day-date{font-size:11px; color:var(--muted); font-family:'JetBrains Mono',monospace; margin-top:2px;}
+  .core-tag{
+    display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:4px 9px; border-radius:20px;
+    font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700;
+    background:color-mix(in srgb, var(--accent) 18%, transparent); color:var(--accent);
+    border:1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .day-ring-wrap{position:absolute; top:12px; right:12px; width:34px; height:34px;}
+  .day-ring-txt{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; font-family:'JetBrains Mono',monospace; color:var(--muted);}
+
+  .task-list{flex:1; padding:4px 10px 8px; display:flex; flex-direction:column; gap:6px;}
+  .task{
+    background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:8px 9px;
+    display:flex; flex-direction:column; gap:6px; position:relative; transition:transform .15s, opacity .3s, background .2s;
+  }
+  .task.done{background:color-mix(in srgb, var(--teal) 10%, var(--panel2)); border-color:color-mix(in srgb, var(--teal) 40%, var(--border));}
+  .task-row1{display:flex; align-items:flex-start; gap:8px;}
+  .chk{
+    width:18px; height:18px; border-radius:5px; border:1.5px solid var(--muted2); flex:0 0 18px; margin-top:1px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; background:transparent; transition:.2s;
+  }
+  .task.done .chk{background:var(--teal); border-color:var(--teal);}
+  .chk svg{width:11px; height:11px; opacity:0; transform:scale(.5); transition:.2s;}
+  .task.done .chk svg{opacity:1; transform:scale(1);}
+  .task-text{
+    flex:1; font-size:12.5px; line-height:1.35; background:transparent; border:none; color:var(--text);
+    font-family:'Inter',sans-serif; resize:none; outline:none; padding:0;
+  }
+  .task.done .task-text{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--teal);}
+  .task-text:disabled{color:var(--text); -webkit-text-fill-color:var(--text); opacity:1; cursor:default;}
+  .task.done .task-text:disabled{color:var(--muted); -webkit-text-fill-color:var(--muted);}
+  .task-row2{display:flex; align-items:center; gap:6px; padding-left:26px;}
+  .time-input{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; background:var(--bg); border:1px solid var(--border);
+    color:var(--muted); border-radius:6px; padding:3px 6px; width:100%; outline:none;
+  }
+  .time-input:focus{border-color:var(--accent); color:var(--text);}
+  .type-dot{width:6px; height:6px; border-radius:50%; flex:0 0 6px;}
+  .del-btn{
+    background:none; border:none; color:var(--muted2); cursor:pointer; font-size:13px; padding:0 2px; line-height:1;
+    opacity:0; transition:opacity .15s;
+  }
+  .task:hover .del-btn{opacity:1;}
+  .del-btn:hover{color:var(--tally);}
+
+  .locked-icon{font-size:9px; color:var(--muted2);}
+
+  .add-task{padding:8px 10px 12px;}
+  .add-input{
+    width:100%; background:var(--panel2); border:1px dashed var(--border-strong); color:var(--text);
+    border-radius:9px; padding:8px 10px; font-size:12px; font-family:'Inter',sans-serif; outline:none;
+  }
+  .add-input:focus{border-color:var(--client); border-style:solid;}
+  .add-input::placeholder{color:var(--muted2);}
+
+  /* ---------- toast ---------- */
+  #toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px); opacity:0;
+    background:linear-gradient(135deg, #1b1e26, #262b36); border:1px solid var(--teal); color:var(--text);
+    padding:14px 22px; border-radius:12px; font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px;
+    box-shadow:0 12px 32px -8px rgba(0,0,0,.6); transition:opacity .35s, transform .35s; z-index:50; pointer-events:none;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #toast .icon{font-size:18px;}
+
+  #levelToast{
+    position:fixed; top:26px; left:50%; transform:translateX(-50%) translateY(-30px); opacity:0;
+    background:linear-gradient(135deg, #2a2033, #1b1e26); border:1px solid var(--violet); color:var(--text);
+    padding:16px 26px; border-radius:14px; font-size:14px; font-weight:700; text-align:center;
+    box-shadow:0 12px 32px -8px rgba(0,0,0,.6); transition:opacity .4s, transform .4s; z-index:51; pointer-events:none;
+  }
+  #levelToast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  #levelToast .big{font-family:'Bebas Neue',sans-serif; font-size:22px; color:var(--violet); display:block; margin-top:2px;}
+
+  .pop{position:absolute; pointer-events:none; font-size:16px; animation:pop .7s ease-out forwards;}
+  @keyframes pop{
+    0%{opacity:1; transform:translate(-50%,-50%) scale(.6) rotate(0deg);}
+    60%{opacity:1;}
+    100%{opacity:0; transform:translate(-50%,-140%) scale(1.3) rotate(20deg);}
+  }
+
+  footer.note{margin-top:24px; font-size:11px; color:var(--muted2); text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="brand-eyebrow">On Air &middot; Weekly Production Log</div>
+    <h1 class="display">CREATOR COMMAND CENTER</h1>
+    <div class="subtitle">Your week, slated day by day. Tap a box, watch it wrap.</div>
+  </div>
+  <div class="stat-cluster">
+    <div class="stat-card" id="weekCard">
+      <div class="num mono"><span id="weekPct">0</span>%</div>
+      <div class="lbl">Week Complete</div>
+    </div>
+    <div class="stat-card" id="streakCard">
+      <div class="num"><span class="flame">🔥</span><span id="streakNum">0</span></div>
+      <div class="lbl">Day Streak</div>
+    </div>
+    <div class="stat-card" id="levelCard">
+      <div class="num" id="levelNum" style="font-size:20px;">Spark</div>
+      <div class="lbl">Level <span id="levelIdx">1</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="weekchart" id="weekchart"></div>
+
+<div class="grid" id="grid"></div>
+
+<footer class="note">Locked tasks are your non‑negotiables — you can still tune the time slot. Everything else is yours to edit.</footer>
+
+<div id="toast"><span class="icon">✅</span><span id="toastText">You've successfully done your work!</span></div>
+<div id="levelToast">Streak Level Up<span class="big" id="levelToastText">Level 2 · Momentum</span></div>
+
+<script>
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const CORE_TASK = ['Editing','Editing','Editing','Scripting','AI Channel','Recording','Recording'];
+const CORE_COLOR = ['amber','amber','amber','sky','violet','tally','tally'];
+const COLOR_HEX = {amber:'#F2A93B', sky:'#4FA3D1', violet:'#9B7EDE', tally:'#E5533D', teal:'#2DD4BF', client:'#E88FD0'};
+const ROUTINE = ['Tuition','School','Gym'];
+
+const LEVELS = [
+  {min:0,  name:'Spark',          idx:1},
+  {min:3,  name:'Momentum',       idx:2},
+  {min:7,  name:'On a Roll',      idx:3},
+  {min:14, name:'Studio Regular', idx:4},
+  {min:30, name:'Legend Editor',  idx:5},
+];
+
+function pad(n){return n<10?'0'+n:''+n;}
+function isoDate(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function todayIso(){return isoDate(new Date());}
+function fmtDate(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+function getWeekDates(){
+  const now = new Date();
+  const dow = now.getDay(); // 0 Sun .. 6 Sat
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  monday.setHours(0,0,0,0);
+  const arr = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(monday);
+    d.setDate(monday.getDate()+i);
+    arr.push(d);
+  }
+  return arr;
+}
+
+function buildDefaultTasks(weekdayIdx){
+  const tasks = [];
+  tasks.push({
+    id:'core', text:CORE_TASK[weekdayIdx], time:'', done:false,
+    type:'core', color:CORE_COLOR[weekdayIdx], locked:true
+  });
+  if(weekdayIdx !== 6){ // not Sunday
+    ROUTINE.forEach((r,i)=>{
+      tasks.push({id:'routine-'+r.toLowerCase(), text:r, time:'', done:false, type:'routine', color:'teal', locked:true});
+    });
+  }
+  return tasks;
+}
+
+let state = {
+  weekDates: getWeekDates(),
+  days: {}, // iso -> task array
+  streak: {count:0, lastCompleteDate:null}
+};
+
+async function loadDay(iso, weekdayIdx){
+  try{
+    const res = await window.storage.get('day:'+iso, false);
+    if(res && res.value){
+      return JSON.parse(res.value);
+    }
+  }catch(e){ /* not found */ }
+  return buildDefaultTasks(weekdayIdx);
+}
+
+async function saveDay(iso, tasks){
+  try{ await window.storage.set('day:'+iso, JSON.stringify(tasks), false); }
+  catch(e){ console.error('save day failed', e); }
+}
+
+async function loadStreak(){
+  try{
+    const res = await window.storage.get('streak', false);
+    if(res && res.value) return JSON.parse(res.value);
+  }catch(e){}
+  return {count:0, lastCompleteDate:null};
+}
+async function saveStreak(){
+  try{ await window.storage.set('streak', JSON.stringify(state.streak), false); }
+  catch(e){ console.error('save streak failed', e); }
+}
+
+function levelFor(count){
+  let lvl = LEVELS[0];
+  for(const l of LEVELS){ if(count >= l.min) lvl = l; }
+  return lvl;
+}
+
+function dayPct(tasks){
+  if(!tasks.length) return 0;
+  const done = tasks.filter(t=>t.done).length;
+  return Math.round(done/tasks.length*100);
+}
+
+function renderStats(){
+  let totalDone=0, totalAll=0;
+  state.weekDates.forEach(d=>{
+    const iso = isoDate(d);
+    const tasks = state.days[iso] || [];
+    totalAll += tasks.length;
+    totalDone += tasks.filter(t=>t.done).length;
+  });
+  const weekPct = totalAll ? Math.round(totalDone/totalAll*100) : 0;
+  document.getElementById('weekPct').textContent = weekPct;
+  document.getElementById('streakNum').textContent = state.streak.count;
+  const lvl = levelFor(state.streak.count);
+  document.getElementById('levelNum').textContent = lvl.name;
+  document.getElementById('levelIdx').textContent = lvl.idx;
+}
+
+function renderWeekChart(){
+  const wc = document.getElementById('weekchart');
+  wc.innerHTML = '';
+  state.weekDates.forEach((d,i)=>{
+    const iso = isoDate(d);
+    const tasks = state.days[iso] || [];
+    const pct = dayPct(tasks);
+    const col = document.createElement('div');
+    col.className = 'wc-col';
+    col.innerHTML = `
+      <div class="wc-pct mono">${pct}%</div>
+      <div class="wc-track"><div class="wc-fill" style="height:${pct}%; background:${COLOR_HEX[CORE_COLOR[i]]};"></div></div>
+      <div class="wc-label">${DAY_NAMES[i].slice(0,3)}</div>
+    `;
+    wc.appendChild(col);
+  });
+}
+
+function taskIcon(type){
+  if(type==='routine') return '';
+  return '';
+}
+
+function renderGrid(){
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  const todayI = todayIso();
+
+  state.weekDates.forEach((d,i)=>{
+    const iso = isoDate(d);
+    const tasks = state.days[iso] || [];
+    const accent = COLOR_HEX[CORE_COLOR[i]];
+    const pct = dayPct(tasks);
+    const isToday = iso === todayI;
+
+    const slate = document.createElement('div');
+    slate.className = 'slate' + (isToday ? ' today' : '');
+    slate.style.setProperty('--accent', accent);
+
+    const circumference = 2*Math.PI*13;
+    const offset = circumference - (pct/100)*circumference;
+
+    slate.innerHTML = `
+      <div class="slate-head">
+        <div class="slate-tab"></div>
+        <div class="day-ring-wrap">
+          <svg width="34" height="34" viewBox="0 0 34 34">
+            <circle cx="17" cy="17" r="13" fill="none" stroke="var(--border)" stroke-width="3"/>
+            <circle cx="17" cy="17" r="13" fill="none" stroke="${accent}" stroke-width="3"
+              stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"
+              stroke-linecap="round" transform="rotate(-90 17 17)" style="transition:stroke-dashoffset .5s;"/>
+          </svg>
+          <div class="day-ring-txt">${pct}</div>
+        </div>
+        <div class="day-name">${DAY_NAMES[i]}${isToday ? ' •' : ''}</div>
+        <div class="day-date mono">${fmtDate(d)}</div>
+        <div class="core-tag" style="--accent:${accent};">${CORE_TASK[i]}</div>
+      </div>
+      <div class="task-list" data-iso="${iso}"></div>
+      <div class="add-task">
+        <input class="add-input" placeholder="+ add task or client work" data-iso="${iso}" />
+      </div>
+    `;
+
+    const list = slate.querySelector('.task-list');
+    tasks.forEach(t=>{
+      list.appendChild(renderTaskEl(iso, t));
+    });
+
+    grid.appendChild(slate);
+  });
+}
+
+function renderTaskEl(iso, t){
+  const colorMap = {core:COLOR_HEX[t.color]||'#F2A93B', routine:COLOR_HEX.teal, custom:COLOR_HEX.client};
+  const dotColor = t.type==='core' ? COLOR_HEX[t.color] : (t.type==='routine' ? COLOR_HEX.teal : COLOR_HEX.client);
+  const el = document.createElement('div');
+  el.className = 'task' + (t.done ? ' done' : '');
+  el.dataset.id = t.id;
+  el.innerHTML = `
+    <div class="task-row1">
+      <button class="chk" aria-label="toggle done">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l6 6L20 6" stroke="#0c1210" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <textarea class="task-text" rows="1" ${t.locked ? 'disabled' : ''}>${t.text}</textarea>
+      ${t.locked ? '' : '<button class="del-btn" title="remove">✕</button>'}
+    </div>
+    <div class="task-row2">
+      <span class="type-dot" style="background:${dotColor};"></span>
+      <input class="time-input mono" placeholder="e.g. 4:00–6:00 PM" value="${t.time||''}" />
+    </div>
+  `;
+
+  const chk = el.querySelector('.chk');
+  chk.addEventListener('click', (e)=> onToggle(iso, t.id, el, e));
+
+  const txt = el.querySelector('.task-text');
+  autoGrow(txt);
+  txt.addEventListener('input', ()=>{ autoGrow(txt); });
+  txt.addEventListener('blur', ()=> onEditText(iso, t.id, txt.value));
+
+  const timeInp = el.querySelector('.time-input');
+  timeInp.addEventListener('blur', ()=> onEditTime(iso, t.id, timeInp.value));
+
+  const delBtn = el.querySelector('.del-btn');
+  if(delBtn) delBtn.addEventListener('click', ()=> onDelete(iso, t.id, el));
+
+  return el;
+}
+
+function autoGrow(ta){
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+
+function findTask(iso, id){
+  const tasks = state.days[iso];
+  return tasks.find(t=>t.id===id);
+}
+
+async function onToggle(iso, id, el, evt){
+  const task = findTask(iso, id);
+  task.done = !task.done;
+  el.classList.toggle('done', task.done);
+  const svgUse = el.querySelector('.chk');
+
+  if(task.done){
+    burstPop(svgUse);
+  }
+
+  await saveDay(iso, state.days[iso]);
+  renderStats();
+  renderWeekChart();
+  updateRing(iso);
+
+  if(task.done){
+    checkDayComplete(iso);
+  }
+}
+
+function updateRing(iso){
+  // find the slate for this iso and update its ring + text without full re-render
+  const list = document.querySelector(`.task-list[data-iso="${iso}"]`);
+  if(!list) return;
+  const slate = list.closest('.slate');
+  const tasks = state.days[iso];
+  const pct = dayPct(tasks);
+  const ringTxt = slate.querySelector('.day-ring-txt');
+  ringTxt.textContent = pct;
+  const circle = slate.querySelectorAll('circle')[1];
+  const circumference = 2*Math.PI*13;
+  circle.setAttribute('stroke-dashoffset', circumference - (pct/100)*circumference);
+}
+
+function burstPop(anchorEl){
+  const rect = anchorEl.getBoundingClientRect();
+  const emojis = ['✨','🎬','✅','🌟'];
+  const span = document.createElement('span');
+  span.className = 'pop';
+  span.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+  span.style.left = (rect.left + rect.width/2) + 'px';
+  span.style.top = (rect.top + rect.height/2) + 'px';
+  span.style.position = 'fixed';
+  document.body.appendChild(span);
+  setTimeout(()=> span.remove(), 700);
+}
+
+async function onEditText(iso, id, val){
+  const task = findTask(iso, id);
+  if(task.locked) return;
+  task.text = val.trim() || task.text;
+  await saveDay(iso, state.days[iso]);
+}
+
+async function onEditTime(iso, id, val){
+  const task = findTask(iso, id);
+  task.time = val.trim();
+  await saveDay(iso, state.days[iso]);
+}
+
+async function onDelete(iso, id, el){
+  const tasks = state.days[iso];
+  const idx = tasks.findIndex(t=>t.id===id);
+  if(idx>-1) tasks.splice(idx,1);
+  el.style.opacity='0';
+  el.style.transform='scale(.9)';
+  setTimeout(()=>{ el.remove(); }, 200);
+  await saveDay(iso, tasks);
+  renderStats();
+  renderWeekChart();
+  updateRing(iso);
+}
+
+document.getElementById('grid').addEventListener('keydown', async (e)=>{
+  if(e.target.classList.contains('add-input') && e.key==='Enter'){
+    e.preventDefault();
+    const iso = e.target.dataset.iso;
+    const val = e.target.value.trim();
+    if(!val) return;
+    const newTask = {id:'custom-'+Date.now(), text:val, time:'', done:false, type:'custom', color:'client', locked:false};
+    state.days[iso].push(newTask);
+    const list = document.querySelector(`.task-list[data-iso="${iso}"]`);
+    list.appendChild(renderTaskEl(iso, newTask));
+    e.target.value='';
+    await saveDay(iso, state.days[iso]);
+    renderStats(); renderWeekChart(); updateRing(iso);
+  }
+});
+
+function checkDayComplete(iso){
+  const tasks = state.days[iso];
+  if(!tasks.length) return;
+  const allDone = tasks.every(t=>t.done);
+  if(!allDone) return;
+
+  showToast('You\'ve successfully done your work!');
+
+  if(iso === todayIso()){
+    handleStreak();
+  }
+}
+
+function showToast(msg){
+  const toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  toast.classList.add('show');
+  setTimeout(()=> toast.classList.remove('show'), 2600);
+}
+
+function showLevelToast(lvl){
+  const t = document.getElementById('levelToast');
+  document.getElementById('levelToastText').textContent = `Level ${lvl.idx} · ${lvl.name}`;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+async function handleStreak(){
+  const today = todayIso();
+  if(state.streak.lastCompleteDate === today) return; // already counted
+
+  const yest = new Date(); yest.setDate(yest.getDate()-1);
+  const yestIso = isoDate(yest);
+  const prevLevel = levelFor(state.streak.count);
+
+  if(state.streak.lastCompleteDate === yestIso){
+    state.streak.count += 1;
+  } else {
+    state.streak.count = 1;
+  }
+  state.streak.lastCompleteDate = today;
+  await saveStreak();
+  renderStats();
+
+  const newLevel = levelFor(state.streak.count);
+  if(newLevel.idx > prevLevel.idx){
+    setTimeout(()=> showLevelToast(newLevel), 700);
+  }
+}
+
+async function init(){
+  state.streak = await loadStreak();
+  const loads = state.weekDates.map((d,i)=> loadDay(isoDate(d), i));
+  const results = await Promise.all(loads);
+  state.weekDates.forEach((d,i)=>{ state.days[isoDate(d)] = results[i]; });
+
+  renderGrid();
+  renderStats();
+  renderWeekChart();
+}
+
+init();
+</script>
+</body>
+</html>
